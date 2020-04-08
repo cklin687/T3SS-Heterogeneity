@@ -1,4 +1,4 @@
-%this script parses .mat files containing lineage data and two fluoresenct
+%This script parses .mat files containing lineage data and two fluorescent
 %channels, saves the results as a .csv where each row is a timepoint and
 %columns contain fluoresence and lineage information.
 %and prints a plot of the lineage for each colony. It also contains two in-line
