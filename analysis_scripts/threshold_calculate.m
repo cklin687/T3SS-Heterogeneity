@@ -8,7 +8,9 @@ close all
 %colony). 
 
 folder='F:\Dropbox\Christina_scripts_for_github_upload\control_data\';
+%For Macs, remember to change all slashes to backslashes (/)
 
+%ExsA is the T3SS-negative control
 exsafolders={'PA14 exsA Pt-sfGFP MinS_NTA s1 col1','PA14 exsA Pt-sfGFP MinS_NTA s1 col2','PA14 exsA Pt-sfGFP MinS_NTA s3 col3','PA14 exsA Pt-sfGFP MinS_NTA s3 col4','PA14 exsA Pt-sfGFP MinS_NTA s4 col5'};
 exsdfolders={'PA14 exsD Pt-sfGFP s1 col1','PA14 exsD Pt-sfGFP s3 col2','PA14 exsD Pt-sfGFP s4 col3','PA14 exsD Pt-sfGFP s4 col4','PA14 exsD Pt-sfGFP s4 col5'};
 
@@ -81,6 +83,7 @@ outdirectory='F:\Dropbox\Christina_scripts_for_github_upload\';
 writetable(classinfo,[outdirectory 'class_info.csv']);
 
 %%
+%Plot histogram of ExsA and ExsD GFP MFIs and Calculating Threshold for T3SS-ON vs OFF.
 figure(1)
 subplot(3,1,1)
 histogram(trainingset(trainingset(:,2)==1),'Normalization','pdf','BinMethod','sqrt')
