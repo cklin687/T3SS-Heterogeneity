@@ -1,10 +1,11 @@
 clear
+close all
 
-clear
 %specify data source directory, e.g., 
 directory = '~\example_data_and_outputs\example_outputs\';
 %specify output directory, e.g., 
-outdirname='~\example_data_and_outputs\example_outputs\gfponly\';   
+outdirname='~\example_data_and_outputs\example_outputs\gfponly\';
+%For Macs, remember to use backslashes (/) in directory names.
 
 matfileobj=dir([directory '*.mat']);
 [matfilenames{1:length(matfileobj)}]=matfileobj(:).name;
@@ -31,12 +32,10 @@ tframes=find(cellListN>0);  %can also set this
 
 
 %make a directory for each image file in same place as mat file
-
 mkdir(outdirname)
 
 
 %loop through frames
-
 for t=1:length(tframes)
 %load raw fluoresence image in
 img=double(imread(imgfilename,tframes(t)));    
@@ -54,8 +53,6 @@ wholemask=zeros(size(img));
 gfpmfi=zeros(1,cellListN(tframes(t)));
 
 %loop through each segmented cell
-
-
 for cellnum=1:cellListN(tframes(t)) 
 %parse oufti output for coordinates of cell
 meshcoord=meshinfo{tframes(t)}{cellnum}.mesh;
@@ -71,7 +68,8 @@ meshcoord=meshinfo{tframes(t)}{cellnum}.mesh;
    if isempty(infrows)==0
        borders(infrows,:)=[];
    end
- %   areavec(cellnum)=polyarea([meshcoord(:,1);flip(meshcoord(:,3))],[meshcoord(:,2);flip(meshcoord(:,4))]);
+%areavec(cellnum)=polyarea([meshcoord(:,1);flip(meshcoord(:,3))],[meshcoord(:,2);flip(meshcoord(:,4))]);
+
 %generate mask containing individual cell
  bactmask=poly2mask((double(borders(:,2))),(double(borders(:,1))),size(img,1),size(img,2));
  %calculate average fluoresence intensity of individual cell
@@ -94,15 +92,15 @@ save(outfilename,'gfpmfi','-ascii')
 end
 end
 %%
-%fit a gaussian mixture model to the GFP intensity distribution (optional)
+%fit a Gaussian mixture model to the GFP intensity distribution (optional)
 close all
 mdl=fitgmdist(gfpmfi',2,'CovarianceType','diagonal');
 binnum=ceil(sqrt(length(gfpmfi)));
 xaxis=linspace(min(gfpmfi),max(gfpmfi),binnum);
 figure(2)
-xlabel('intensity (minus background)')
+xlabel('Mean Fluorescence Intensity') %minus background
 ylabel('Cumulative Probability Function')
-title('CDF evalutated at each data point')
+title('CDF evaluated at each data point')
 hold on
 [f,x]=ecdf(gfpmfi);
 cdfsum=cdf(mdl,x);
@@ -117,6 +115,8 @@ cdf2=mdl.ComponentProportion(largecomp)*normcdf(xax,mdl.mu(largecomp),sqrt(mdl.S
 plot(xax,cdf1,'--b')
 plot(xax,cdf2+mdl.ComponentProportion(smallcomp),'--r')
 legend({'GMM fit','data','CDF1','CDF2+w1'})
+
+%Plotting histograms of GFP MFIs
 figure(3)
 [n, c]=ecdfhist(f,x,binnum);
 hold on;
@@ -124,10 +124,12 @@ hold on;
 plot(c,n,'ok')
 nfit=ecdfhist(cdfsum,x,binnum);
 plot(c,nfit,'-g')
-xlabel('Intensity')
-ylabel('probability density')
+xlabel('Mean Fluorescence Intensity')
+ylabel('Probability Density')
 pdf1=ecdfhist(cdf1,xax,binnum);
 pdf2=ecdfhist(cdf2,xax,binnum);
+
+%Plotting Gaussian mixed model fits
 plot(c,pdf1,'--b')
 plot(c,pdf2,'--r')
 legstr0='EM Fit';
