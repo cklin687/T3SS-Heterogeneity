@@ -6,13 +6,20 @@
 clear
 %directory containing original mat files
 directory ='F:\Dropbox\Christina_data\PA14 WT Pt-sfGFP in NTA\combined_4.4.19_4.14.19\'
+%For Macs, must change all slashes to backslash (/) for all directories/files named.
 matfileobj=dir([directory '*.mat']);
 [matfilenames{1:length(matfileobj)}]=matfileobj(:).name;
 numfiles=length(matfileobj)
 %declare which frames should be analyzed
 %tframes=[1,3,5,7,9,11,13,15,17,25];
 tframes=25;
+
+%Import classification info defined by controls
 classinfo=xlsread('F:\Dropbox\Christina_scripts_for_github_upload\class_info.csv');
+%For Macs, xlsread may not work. Use importdata to define another variable and then define classinfo for use as a variable below.
+%CI=importdata('/Users/Christina/Dropbox/Chrissy Data/class_info.csv', ',', 1);
+%classinfo=CI.data;
+
 %loop through datfiles
 for fnum=1:numfiles 
 matfilename=[directory matfilenames{fnum}];  
@@ -21,6 +28,7 @@ for t=1:length(tframes)
 outdirname=matfilename(1:end-4);   
 outfilename=[outdirname '\gfpmfi_t' num2str(tframes(t)) '.dat'];
 
+%Calculating GFP MFIs and classifying it as on/off.
 gfpmfi{t}=load(outfilename)
 meanint(fnum,t)=nanmean(gfpmfi{t})
 cellnum(fnum,t)=sum(isnan(gfpmfi{t})==0);
