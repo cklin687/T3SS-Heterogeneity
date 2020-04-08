@@ -9,28 +9,29 @@ clear
 close all
 %specify input and output directories
 directory='~\example_data_and_outputs\example_outputs\';
-outdirname='~\example_data_and_outputs\example_outputs\lineage\';   
+outdirname='~\example_data_and_outputs\example_outputs\lineage\';  
+%Remember for Macs that slashes need to be backslashes (/).
 
+%Load Oufti output .mat files from directory
 matfileobj=dir([directory '*.mat']);
 [matfilenames{1:length(matfileobj)}]=matfileobj(:).name;
 numfiles=length(matfileobj);
-%loop through colony files 
 
+%loop through colony files 
 for fnum=1:numfiles
 matfilename=[directory matfilenames{fnum}];
 imgfilestr=['GFP-' matfilenames{fnum}(1:end-7) '.tif'];
 rfpimgfilestr=['RFP-' matfilenames{fnum}(1:end-7) '.tif'];
 imgfilename=[directory imgfilestr];
-
 rfpfilename=[directory rfpimgfilestr];
 
 load(matfilename);
 tspan=length(cellListN);
 
+%Uncomment the "tframes=input()" command if you want to analyze specific frames of the lineage tree. 
+%Can do a range (Ex: [1:27]) or specific frames (Ex: [1,5,9,13,17,27,33]).
 %tframes=input(['time frame? input number from 1 to ' num2str(tspan) '; if 1 frame just enter 1'])
-%tframes=[1,5,9,13,17,27,33];
 tframes=find(cellListN>0);
-
 
 %loop through timepoints 
 for t=1:length(tframes)
@@ -38,10 +39,12 @@ img=double(imread(imgfilename,tframes(t)));
 rfpimg=double(imread(rfpfilename,tframes(t)));    
     allIDlist=cellList.cellId;
 
+%Load CellIDs and segmentation mesh data.
 numcells=max(cell2mat(allIDlist(~cellfun('isempty',allIDlist))));
 cellIDs=cellList.cellId{t};
 meshinfo=cellList.meshData{t};
 
+%Define GFP and RFP MFIs
 wholemask=zeros(size(img));
 gfpmfi=zeros(1,cellListN(tframes(t)));
 rfpmfi=zeros(1,cellListN(tframes(t)));
@@ -67,47 +70,45 @@ for cellnum=1:cellListN(tframes(t))
     gfpmfi(cellnum)=mean(img(bactmask==1));     
     rfpmfi(cellnum)=mean(rfpimg(bactmask==1));
     wholemask=wholemask+cellnum*bactmask;
+    
     birthframe(cellIDs(cellnum))=meshinfo{cellnum}.birthframe;
-polarity(cellIDs(cellnum))=meshinfo{cellnum}.polarity;
-ancestors{cellIDs(cellnum)}=meshinfo{cellnum}.ancestors;
-descendants{cellIDs(cellnum)}=meshinfo{cellnum}.descendants;
-    if isempty(ancestors{cellIDs(cellnum)})==0
-ancestorlist(cellnum)=max(ancestors{cellIDs(cellnum)});
-    else
-        ancestorlist(cellnum)=NaN;
-    end
+    polarity(cellIDs(cellnum))=meshinfo{cellnum}.polarity;
+    ancestors{cellIDs(cellnum)}=meshinfo{cellnum}.ancestors;
+    descendants{cellIDs(cellnum)}=meshinfo{cellnum}.descendants;
     
-       
-    
+    	if isempty(ancestors{cellIDs(cellnum)})==0
+		ancestorlist(cellnum)=max(ancestors{cellIDs(cellnum)});
+   	 else
+        	ancestorlist(cellnum)=NaN;
+    	end
     end
 end
+
+%Calculating background fluorescence values
 wholemaskBWbin=imdilate(wholemask>0,strel('disk',10));
 backmask=imcomplement(wholemaskBWbin).*img;
 backval=mean(img(backmask>0));
 rfpbackval=mean(rfpimg(backmask>0));
 
+%Subtract background fluorescence values
 gfpmfi=gfpmfi-backval;
 rfpmfi=rfpmfi-rfpbackval;
 
 gfpmficell{t}=gfpmfi;
-
 rfpmficell{t}=rfpmfi;
-
 celllists{t}=double([cellList.cellId{tframes(t)}]);
-
 ancestorscell{t}=ancestorlist;
-
-
 timelabels{t}=tframes(t)*ones(size(gfpmfi));
-
-
 end
+
+%Define nodes for lineage tree
 nodes=zeros(1,numcells);
 A=find(cellfun('isempty',ancestors)==0);
 for i=1:length(A)
     nodes(A(i))=max(ancestors{A(i)});
 end
 
+%Functions for Trimtreeplot and Trimtreelayout defined below; may need MATLAB 2018 and above to work
 figure(fnum); hold on
 title(matfilenames{fnum})
 trimtreeplot(nodes);
@@ -115,6 +116,8 @@ trimtreeplot(nodes);
 for i = 1 :numcells
 text(x(i),y(i),num2str(i),'HorizontalAlignment','center','VerticalAlignment','bottom','FontSize',8);
 end
+
+%Save GFP/RFP MFIs and define variables needed
 outfilename=[outdirname matfilenames{fnum} '_twocolor_lineage.csv'];
 allts=cell2mat(timelabels)';
 allcellids=cell2mat(celllists)';
@@ -122,16 +125,13 @@ allgfps=cell2mat(gfpmficell)';
 allrfps=cell2mat(rfpmficell)';
 alllastancestors=cell2mat(ancestorscell)';
 
-
 [count cellnums]=hist(nodes,unique(nodes));
-%if something has count 1
 
 allIDlist(cellfun('isempty', allIDlist))=[];
 cellIDlist=unique(cell2mat(allIDlist));
 
 leafIDs=setdiff(cellIDlist,cellnums);
 leafnum=length(leafIDs);
-
 leafstatus=ismember(allcellids,leafIDs);
 
 %Tint=NaN(leafnum,tspan);
@@ -139,12 +139,12 @@ output=table(allts,allcellids,allgfps,allrfps,alllastancestors,leafstatus,'Varia
 writetable(output,outfilename);
 fnum
 end
+
 %%
-%plot intensity of gfp along a branch of the tree
+%Plot intensity of GFP along a branch of the tree
 [count cellnum]=hist(newtree,unique(newtree))
 allIDlist(cellfun('isempty', allIDlist))=[];
 cellIDlist=unique(cell2mat(allIDlist));
-
 leafIDs=setdiff(cellIDlist,cellnum);
 leafnum=length(leafIDs);
 
@@ -165,9 +165,14 @@ for ii=1:leafnum% =find(leafIDs==677)% 1 :leafnum
     hold on
     plot(tleaftrace,gfpleaftrace,'--')
 end
-xlabel('time (frame)')
-ylabel('FL int (AU)')
+
+xlabel('Time (Frame)') 
+%Need to multiply tleaftrace by 15min/frame if want to plot in minutes
+ylabel('Mean Fluorescence Intensity (AU)')
+
+
 %%
+%Functions defined below.
 function trimtreeplot(p,c,d)
 % TRIMTREEPLOT A modified standard function TREEPLOT. Plots the
 %   leaves differently from TREEPLOT. They appear in their
