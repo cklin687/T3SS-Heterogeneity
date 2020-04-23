@@ -148,6 +148,7 @@ for fnum=1:numfiles
         save(outfilename,'gfpmfi','-ascii')
     end
 end
+
 %%
 %fit a Gaussian mixture model to the GFP intensity distribution (optional)
 close all
